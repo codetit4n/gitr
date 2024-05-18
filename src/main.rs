@@ -1,3 +1,10 @@
+use clap::Parser;
+mod cli;
+
 fn main() {
-    println!("Hello, gitrs!");
+    let args = cli::Args::parse();
+    match args.cmd {
+        cli::Commands::Init => unimplemented!(),
+        cli::Commands::Add => unimplemented!(),
+    }
 }
