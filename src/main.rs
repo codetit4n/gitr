@@ -1,10 +1,10 @@
 use clap::Parser;
 mod cli;
+mod utils;
 
 fn main() {
-    let args = cli::Args::parse();
-    match args.cmd {
-        cli::Commands::Init => unimplemented!(),
-        cli::Commands::Add => unimplemented!(),
-    }
+    use cli::Args;
+
+    let args = Args::parse();
+    args.cmd.execute();
 }

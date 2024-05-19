@@ -1,8 +1,8 @@
-# gitrs
+# gitr
 
 > [!WARNING]\
 > Work In Progress!
 
-My attempt at writing a minimal version of git in Rust
+CREDITS:
 
-Reference: https://wyag.thb.lt
+- https://wyag.thb.lt
