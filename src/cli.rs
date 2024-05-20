@@ -1,3 +1,4 @@
+use crate::GitRepository;
 use clap::{Parser, Subcommand};
 
 /// gitr: Git in Rust
@@ -57,6 +58,11 @@ pub enum Commands {
 impl Commands {
     pub fn execute(&self) {
         match self {
+            Commands::Init => {
+                let repo = GitRepository::new(".", false);
+                dbg!(&repo);
+                todo!()
+            }
             _ => unimplemented!(),
         }
     }

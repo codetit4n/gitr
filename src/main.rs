@@ -1,10 +1,7 @@
 use clap::Parser;
-mod cli;
-mod utils;
+use gitr::cli::Args;
 
 fn main() {
-    use cli::Args;
-
     let args = Args::parse();
     args.cmd.execute();
 }
