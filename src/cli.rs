@@ -1,5 +1,7 @@
-use crate::GitRepository;
+use crate::types::git_repo::GitRepository;
+use crate::utils::*;
 use clap::{Parser, Subcommand};
+use std::fs;
 
 /// gitr: Git in Rust
 #[derive(Parser, Debug)]
@@ -66,4 +68,36 @@ impl Commands {
             _ => unimplemented!(),
         }
     }
+}
+
+fn create_repo(path: &str) -> GitRepository {
+    let repo = GitRepository::new(path, true);
+
+    if repo.worktree.exists() {
+        if !repo.worktree.is_dir() {
+            panic!("Not a directory {}", path);
+        }
+        if repo.gitdir.exists()
+            && fs::read_dir(&repo.gitdir)
+                .expect("Failed to read .git directory")
+                .into_iter()
+                .nth(0)
+                .is_some()
+        {
+            panic!("{} is not empty", repo.gitdir.display());
+        }
+    } else {
+        fs::create_dir_all(&repo.worktree).expect("Failed to create worktree directory");
+    }
+
+    repo_dir(&repo_path(&repo.gitdir, "branches"), true)
+        .expect("Failed to create branches directory");
+    repo_dir(&repo_path(&repo.gitdir, "objects"), true)
+        .expect("Failed to create objects directory");
+    repo_dir(&repo_path(&repo.gitdir, "refs/tags"), true)
+        .expect("Failed to create refs/tags directory");
+    repo_dir(&repo_path(&repo.gitdir, "refs/heads"), true)
+        .expect("Failed to create refs/heads directory");
+
+    todo!()
 }
