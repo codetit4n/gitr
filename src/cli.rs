@@ -2,6 +2,7 @@ use crate::types::git_repo::GitRepository;
 use crate::utils::*;
 use clap::{Parser, Subcommand};
 use std::fs;
+use std::path::PathBuf;
 
 /// gitr: Git in Rust
 #[derive(Parser, Debug)]
@@ -15,7 +16,10 @@ pub struct Args {
 pub enum Commands {
     /// Initialize an empty gitr repository
     ///
-    Init,
+    Init {
+        /// Where to create the repository
+        path: Option<PathBuf>,
+    },
     /// Add a file to the staging area
     ///
     Add,
@@ -60,10 +64,17 @@ pub enum Commands {
 impl Commands {
     pub fn execute(&self) {
         match self {
-            Commands::Init => {
-                let repo = GitRepository::new(".", false);
-                dbg!(&repo);
-                todo!()
+            Commands::Init { path } => {
+                let repo = if path.is_none() {
+                    create_repo(".")
+                } else {
+                    create_repo(path.as_ref().unwrap().to_str().unwrap())
+                };
+
+                println!(
+                    "Initialized empty git repository in {}",
+                    repo.worktree.canonicalize().unwrap().display()
+                );
             }
             _ => unimplemented!(),
         }
@@ -91,13 +102,32 @@ fn create_repo(path: &str) -> GitRepository {
     }
 
     repo_dir(&repo_path(&repo.gitdir, "branches"), true)
-        .expect("Failed to create branches directory");
+        .expect("Failed to create .git/branches directory");
     repo_dir(&repo_path(&repo.gitdir, "objects"), true)
-        .expect("Failed to create objects directory");
+        .expect("Failed to create .git/objects directory");
     repo_dir(&repo_path(&repo.gitdir, "refs/tags"), true)
-        .expect("Failed to create refs/tags directory");
+        .expect("Failed to create .git/refs/tags directory");
     repo_dir(&repo_path(&repo.gitdir, "refs/heads"), true)
-        .expect("Failed to create refs/heads directory");
+        .expect("Failed to create .git/refs/heads directory");
 
-    todo!()
+    fs::write(
+        &repo_file(&repo.gitdir, "description", true)
+            .expect("Failed to create .git/description file"),
+        "Unnamed repository; edit this file 'description' to name the repository.\n",
+    )
+    .expect("Failed to write .git/description file");
+
+    fs::write(
+        &repo_file(&repo.gitdir, "HEAD", true).expect("Failed to create .git/HEAD file"),
+        "ref: refs/heads/master\n",
+    )
+    .expect("Failed to write .git/HEAD file");
+
+    fs::write(
+        &repo_file(&repo.gitdir, "config", true).expect("Failed to create .git/config file"),
+        serde_ini::to_string(&repo.config).expect("Failed to serialize GitConfig"),
+    )
+    .expect("Failed to write .git/config file");
+
+    repo
 }

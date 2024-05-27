@@ -26,9 +26,10 @@ impl GitRepository {
                 panic!(".git/config file missing");
             }
 
-            let config: GitConfig =
-                serde_ini::from_str(&read_config).expect("Failed to parse .git/config");
+            let mut config: GitConfig = GitConfig::default();
+
             if !force {
+                config = serde_ini::from_str(&read_config).expect("Failed to parse .git/config");
                 let ver = config
                     .core
                     .repositoryformatversion

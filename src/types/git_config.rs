@@ -1,18 +1,24 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// Represents a Git Config file located in the .git directory
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct GitConfig {
     pub core: Core,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Core {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub repositoryformatversion: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub filemode: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub bare: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub logallrefupdates: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub symlinks: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub ignorecase: Option<String>,
 }
 

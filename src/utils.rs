@@ -1,3 +1,4 @@
+use crate::types::git_repo::GitRepository;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -31,4 +32,30 @@ pub fn repo_dir(path: &Path, mkdir: bool) -> Option<PathBuf> {
         return Some(PathBuf::from(path));
     }
     None
+}
+
+pub fn repo_find(path: &Path, required: bool) -> Option<GitRepository> {
+    let path = Path::canonicalize(path).expect("Failed to canonicalize path");
+    let gitdir = path.join(".git");
+
+    if gitdir.is_dir() {
+        return Some(GitRepository::new(path.to_str().unwrap(), false));
+    } else {
+    }
+
+    let mut parent = path.join("../");
+    parent = parent
+        .canonicalize()
+        .expect("Failed to canonicalize parent path");
+
+    if parent == path {
+        if required {
+            panic!("No git directory.")
+        } else {
+            return None;
+        }
+    } else {
+    }
+
+    return repo_find(&parent, required);
 }
