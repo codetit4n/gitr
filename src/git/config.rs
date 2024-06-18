@@ -6,6 +6,7 @@ pub struct GitConfig {
     pub core: Core,
 }
 
+/// Represents the core section of the Git Config file
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Core {
     #[serde(skip_serializing_if = "Option::is_none")]

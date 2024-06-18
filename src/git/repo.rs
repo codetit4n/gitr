@@ -1,8 +1,8 @@
-use crate::types::git_config::GitConfig;
-use crate::utils::repo_file;
-/// Represents a Git Repository
+use crate::git::config::GitConfig;
+use crate::git::utils::repo_file;
 use std::{fs, path::PathBuf};
 
+/// Represents a Git Repository
 #[derive(Debug)]
 pub struct GitRepository {
     pub worktree: PathBuf,

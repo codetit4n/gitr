@@ -1,4 +1,4 @@
-use crate::types::git_repo::GitRepository;
+use crate::git::repo::GitRepository;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -34,6 +34,7 @@ pub fn repo_dir(path: &Path, mkdir: bool) -> Option<PathBuf> {
     None
 }
 
+/// Find the git repository in the given path
 pub fn repo_find(path: &Path, required: bool) -> Option<GitRepository> {
     let path = Path::canonicalize(path).expect("Failed to canonicalize path");
     let gitdir = path.join(".git");
