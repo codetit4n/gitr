@@ -13,7 +13,7 @@ pub struct Args {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    /// Initialize an empty gitr repository
+    /// Initialize an empty git repository
     ///
     Init {
         /// Where to create the repository
