@@ -75,12 +75,6 @@ impl Commands {
                     repo.worktree.canonicalize().unwrap().display()
                 );
             }
-            Commands::CatFile => {
-                println!("CatFile");
-                let repo = crate::git::repo::GitRepository::new(".", false);
-                GitObject::read(repo, "0851d920e3ca968340cb81fd2a8f6b819c76bf10");
-                todo!();
-            }
             _ => unimplemented!(),
         }
     }
