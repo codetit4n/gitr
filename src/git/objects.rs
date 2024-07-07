@@ -1,5 +1,4 @@
 use crate::git::repo::GitRepository;
-use crate::git::utils::repo_file;
 use flate2::bufread::ZlibDecoder;
 use std::fs;
 use std::io::prelude::*;
