@@ -11,14 +11,17 @@ pub struct GitRepository {
 
 impl GitRepository {
     pub fn new(path: &str, force: bool) -> Self {
-        // TODO: Updated this
-        let gitdir_path = PathBuf::from(path).join(".git");
+        let path = PathBuf::from(path);
+        let gitdir_path = path.join(".git");
         if !(force || gitdir_path.is_dir()) {
-            panic!("Not a Git Repository {}", path);
+            panic!(
+                "Not a Git Repository {}",
+                path.canonicalize().unwrap().to_str().unwrap()
+            );
         } else {
             let path = PathBuf::from(path);
             let repo = Self {
-                worktree: path,
+                worktree: path.clone(),
                 gitdir: path.join(".git"),
                 config: GitConfig::default(),
             };
@@ -64,7 +67,14 @@ impl GitRepository {
     pub fn repo_file(&self, path: &str, mkdir: bool) -> Option<PathBuf> {
         let path = self.repo_path(path);
 
-        self.repo_dir(path.parent().unwrap().to_str().unwrap(), mkdir)
+        self.repo_dir(
+            path.parent()
+                .expect("Failed to get parent path {path.parent().display()}")
+                .to_str()
+                .unwrap(),
+            mkdir,
+        )
+        .map(|_| path)
     }
 
     /// Return and optionally create a path to a directory
@@ -84,25 +94,25 @@ impl GitRepository {
         }
         None
     }
+}
 
-    /// Find the git repository in the given path
-    pub fn repo_find(self, path: &Path, required: bool) -> Option<Self> {
-        let path = Path::canonicalize(path).expect("Failed to canonicalize path");
+/// Find the git repository in the given path
+pub fn repo_find(path: &Path, required: bool) -> Option<GitRepository> {
+    let path = Path::canonicalize(path).expect("Failed to canonicalize path");
 
-        if path.join(".git").is_dir() {
-            return Some(Self::new(path.to_str().unwrap(), false));
-        } else {
-            let parent = Path::canonicalize(&path.join("..")).unwrap();
+    if path.join(".git").is_dir() {
+        return Some(GitRepository::new(path.to_str().unwrap(), false));
+    } else {
+        let parent = Path::canonicalize(&path.join("..")).unwrap();
 
-            if parent == path {
-                if required {
-                    panic!("No git directory");
-                } else {
-                    return None;
-                }
+        if parent == path {
+            if required {
+                panic!("No git directory");
             } else {
-                return self.repo_find(&parent, required);
+                return None;
             }
+        } else {
+            return repo_find(&parent, required);
         }
     }
 }

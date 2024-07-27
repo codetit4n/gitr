@@ -29,21 +29,21 @@ pub fn create_repo(path: &str) -> GitRepository {
     assert!(repo.repo_dir("refs/heads", true).is_some());
 
     fs::write(
-        repo.repo_file("description", false)
+        repo.repo_file("description", true)
             .expect("Failed to create .git/description file"),
         "Unnamed repository; edit this file 'description' to name the repository.\n",
     )
     .expect("Failed to write .git/description file");
 
     fs::write(
-        repo.repo_file("HEAD", false)
+        repo.repo_file("HEAD", true)
             .expect("Failed to create .git/HEAD file"),
         "ref: refs/heads/master\n",
     )
     .expect("Failed to write .git/HEAD file");
 
     fs::write(
-        repo.repo_file("config", false)
+        repo.repo_file("config", true)
             .expect("Failed to create .git/config file"),
         serde_ini::to_string(&repo.config).expect("Failed to serialize GitConfig"),
     )
