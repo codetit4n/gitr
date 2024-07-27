@@ -1,9 +1,9 @@
-use crate::git::repo::GitRepository;
+use crate::git::repo::{repo_dir, repo_file, GitRepository};
 use serde_ini;
 use std::fs;
 
 /// Create a new git repository at the given path
-pub fn create_repo(path: &str) -> GitRepository {
+pub fn repo_create(path: &str) -> GitRepository {
     let repo = GitRepository::new(path, true);
 
     if repo.worktree.exists() {
@@ -23,28 +23,25 @@ pub fn create_repo(path: &str) -> GitRepository {
         fs::create_dir_all(&repo.worktree).expect("Failed to create worktree directory");
     }
 
-    assert!(repo.repo_dir("branches", true).is_some());
-    assert!(repo.repo_dir("objects", true).is_some());
-    assert!(repo.repo_dir("refs/tags", true).is_some());
-    assert!(repo.repo_dir("refs/heads", true).is_some());
+    assert!(repo_dir(&repo, "branches", true).is_some());
+    assert!(repo_dir(&repo, "objects", true).is_some());
+    assert!(repo_dir(&repo, "refs/tags", true).is_some());
+    assert!(repo_dir(&repo, "refs/heads", true).is_some());
 
     fs::write(
-        repo.repo_file("description", true)
-            .expect("Failed to create .git/description file"),
+        repo_file(&repo, "description", false).expect("Failed to get .git/description file"),
         "Unnamed repository; edit this file 'description' to name the repository.\n",
     )
     .expect("Failed to write .git/description file");
 
     fs::write(
-        repo.repo_file("HEAD", true)
-            .expect("Failed to create .git/HEAD file"),
+        repo_file(&repo, "HEAD", false).expect("Failed to get .git/HEAD file"),
         "ref: refs/heads/master\n",
     )
     .expect("Failed to write .git/HEAD file");
 
     fs::write(
-        repo.repo_file("config", true)
-            .expect("Failed to create .git/config file"),
+        repo_file(&repo, "config", false).expect("Failed to get .git/config file"),
         serde_ini::to_string(&repo.config).expect("Failed to serialize GitConfig"),
     )
     .expect("Failed to write .git/config file");

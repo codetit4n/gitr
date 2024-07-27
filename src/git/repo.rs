@@ -14,33 +14,30 @@ impl GitRepository {
         let path = PathBuf::from(path);
         let gitdir_path = path.join(".git");
         if !(force || gitdir_path.is_dir()) {
-            panic!(
-                "Not a Git Repository {}",
-                path.canonicalize().unwrap().to_str().unwrap()
-            );
+            panic!("Not a Git Repository {}", path.display());
         } else {
-            let path = PathBuf::from(path);
-            let repo = Self {
-                worktree: path.clone(),
-                gitdir: path.join(".git"),
+            let mut repo = Self {
+                worktree: path,
+                gitdir: gitdir_path,
                 config: GitConfig::default(),
             };
+            let config_path = repo_file(&repo, "config", false);
 
-            let config_path = repo.repo_file("config", false);
-
-            let mut read_config = String::new();
             if config_path.is_some() {
-                read_config = fs::read_to_string(config_path.unwrap())
-                    .expect("Failed to read .git/config file");
+                if config_path.clone().unwrap().exists() {
+                    let read_config = fs::read_to_string(config_path.unwrap())
+                        .expect("Failed to read .git/config file");
+                    let config: GitConfig =
+                        serde_ini::from_str(&read_config).expect("Failed to parse .git/config");
+                    repo.config = config;
+                }
             } else if !force {
                 panic!(".git/config file missing");
             }
 
-            let mut config: GitConfig = GitConfig::default();
-
             if !force {
-                config = serde_ini::from_str(&read_config).expect("Failed to parse .git/config");
-                let ver = config
+                let ver = repo
+                    .config
                     .core
                     .repositoryformatversion
                     .as_ref()
@@ -50,69 +47,75 @@ impl GitRepository {
                 }
             }
 
-            Self {
-                worktree: PathBuf::from(path),
-                gitdir: gitdir_path,
-                config,
-            }
+            repo
         }
-    }
-
-    /// Compute path under repo's gitdir
-    pub fn repo_path(&self, path: &str) -> PathBuf {
-        Path::new(&self.gitdir).join(path)
-    }
-
-    /// Return and optionally create a path to a file
-    pub fn repo_file(&self, path: &str, mkdir: bool) -> Option<PathBuf> {
-        let path = self.repo_path(path);
-
-        self.repo_dir(
-            path.parent()
-                .expect("Failed to get parent path {path.parent().display()}")
-                .to_str()
-                .unwrap(),
-            mkdir,
-        )
-        .map(|_| path)
-    }
-
-    /// Return and optionally create a path to a directory
-    pub fn repo_dir(&self, path: &str, mkdir: bool) -> Option<PathBuf> {
-        let path = self.repo_path(path);
-
-        if path.exists() {
-            match path.is_dir() {
-                true => return Some(path),
-                false => panic!("Not a directory {}", path.display()),
-            }
-        }
-
-        if mkdir {
-            fs::create_dir_all(&path).expect("Failed to create directory");
-            return Some(path);
-        }
-        None
     }
 }
 
-/// Find the git repository in the given path
-pub fn repo_find(path: &Path, required: bool) -> Option<GitRepository> {
-    let path = Path::canonicalize(path).expect("Failed to canonicalize path");
+pub fn repo_path(repo: &GitRepository, path: &str) -> PathBuf {
+    repo.gitdir.join(path)
+}
 
-    if path.join(".git").is_dir() {
-        return Some(GitRepository::new(path.to_str().unwrap(), false));
-    } else {
-        let parent = Path::canonicalize(&path.join("..")).unwrap();
+/// Return and optionally create a path to a file
+pub fn repo_file(repo: &GitRepository, path: &str, mkdir: bool) -> Option<PathBuf> {
+    let path = PathBuf::from(path);
+    repo_dir(
+        repo,
+        path.parent()
+            .expect("Failed to get parent path {path.parent().display()}")
+            .to_str()
+            .expect("Failed to convert parent path to string"),
+        mkdir,
+    )
+    .map(|_| {
+        repo_path(
+            repo,
+            path.to_str().expect("Failed to convert path to string"),
+        )
+    })
+}
 
-        if parent == path {
-            if required {
-                panic!("No git directory");
-            } else {
-                return None;
-            }
-        } else {
-            return repo_find(&parent, required);
+/// Return and optionally create a path to a directory
+pub fn repo_dir(repo: &GitRepository, path: &str, mkdir: bool) -> Option<PathBuf> {
+    let path = repo_path(repo, path);
+    if path.exists() {
+        match path.is_dir() {
+            true => return Some(PathBuf::from(path)),
+            false => panic!("Not a directory {}", path.display()),
         }
     }
+
+    if mkdir {
+        fs::create_dir_all(&path).expect("Failed to create directory");
+        return Some(PathBuf::from(path));
+    }
+    None
+}
+
+/// Find the git repository in the given path
+pub fn repo_find(path: &str, required: bool) -> Option<GitRepository> {
+    let path = Path::new(path);
+    let path = Path::canonicalize(path).expect("Failed to canonicalize path");
+    let gitdir = path.join(".git");
+
+    if gitdir.is_dir() {
+        return Some(GitRepository::new(path.to_str().unwrap(), false));
+    }
+    let parent = path.join("../");
+
+    if parent == path {
+        if required {
+            panic!("No git directory.")
+        } else {
+            return None;
+        }
+    } else {
+    }
+
+    repo_find(
+        parent
+            .to_str()
+            .expect("Failed to convert parent path to string"),
+        required,
+    )
 }

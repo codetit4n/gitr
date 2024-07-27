@@ -1,5 +1,4 @@
-use crate::git::helpers::create_repo;
-use crate::git::objects::GitObject;
+use crate::git::helpers::repo_create;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
@@ -65,9 +64,9 @@ impl Commands {
         match self {
             Commands::Init { path } => {
                 let repo = if path.is_none() {
-                    create_repo(".")
+                    repo_create(".")
                 } else {
-                    create_repo(path.as_ref().unwrap().to_str().unwrap())
+                    repo_create(path.as_ref().unwrap().to_str().unwrap())
                 };
 
                 println!(
