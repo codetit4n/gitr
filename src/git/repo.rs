@@ -109,7 +109,6 @@ pub fn repo_find(path: &str, required: bool) -> Option<GitRepository> {
         } else {
             return None;
         }
-    } else {
     }
 
     repo_find(

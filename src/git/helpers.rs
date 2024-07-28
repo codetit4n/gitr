@@ -1,3 +1,5 @@
+use crate::cli::ObjectType;
+use crate::git::objects::objects::object_read;
 use crate::git::repo::{repo_dir, repo_file, GitRepository};
 use serde_ini;
 use std::fs;
@@ -47,4 +49,18 @@ pub fn repo_create(path: &str) -> GitRepository {
     .expect("Failed to write .git/config file");
 
     repo
+}
+
+pub fn cat_file(repo: &GitRepository, obj: &str, fmt: Option<ObjectType>) {
+    let obj = object_read(repo, &object_find(repo, obj, fmt, true)).unwrap();
+    println!(
+        "{}",
+        std::str::from_utf8(&obj.serialize(Some(repo)))
+            .unwrap()
+            .to_string()
+    );
+}
+
+fn object_find(repo: &GitRepository, name: &str, fmt: Option<ObjectType>, follow: bool) -> String {
+    name.to_string()
 }

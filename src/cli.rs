@@ -1,5 +1,8 @@
-use crate::git::helpers::repo_create;
-use clap::{Parser, Subcommand};
+use crate::git::{
+    helpers::{cat_file, repo_create},
+    repo::repo_find,
+};
+use clap::{Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
 
 /// gitr: Git in Rust
@@ -23,7 +26,13 @@ pub enum Commands {
     Add,
     /// Provide content or details of repository objects
     ///
-    CatFile,
+    CatFile {
+        /// Specify the type
+        #[arg(value_enum)]
+        type_: ObjectType,
+        /// The object to display
+        object: String,
+    },
     /// Debug gitignore / exclude files
     ///
     CheckIgnore,
@@ -59,6 +68,14 @@ pub enum Commands {
     Tag,
 }
 
+#[derive(Debug, Clone, ValueEnum)]
+pub enum ObjectType {
+    Blob,
+    Commit,
+    Tag,
+    Tree,
+}
+
 impl Commands {
     pub fn execute(&self) {
         match self {
@@ -73,6 +90,11 @@ impl Commands {
                     "Initialized empty git repository in {}",
                     repo.worktree.canonicalize().unwrap().display()
                 );
+            }
+            Commands::CatFile { type_, object } => {
+                let repo = repo_find(".", true).expect("Not a git repository");
+
+                cat_file(&repo, object, Some(type_.clone()));
             }
             _ => unimplemented!(),
         }
