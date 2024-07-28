@@ -8,3 +8,4 @@ clap = { version = "4.5.4", features = ["derive", "env"] }
 serde = { version = "1.0.202", features = ["derive"] }
 serde_ini = "0.2.0"
 flate2 = "1.0.30"
+sha1 = "0.10.6"
