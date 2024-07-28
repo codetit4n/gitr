@@ -3,6 +3,18 @@
 > [!WARNING]\
 > Work In Progress!
 
-CREDITS:
+### Install `gitr`
 
-- https://wyag.thb.lt
+```bash
+./install.sh
+```
+
+### Run
+
+```bash
+gitr help
+```
+
+#### CREDITS:
+
+https://wyag.thb.lt
