@@ -1,5 +1,5 @@
 use crate::git::{
-    helpers::{cat_file, repo_create},
+    helpers::{cmd_cat_file, cmd_hash_object, cmd_repo_create},
     repo::repo_find,
 };
 use clap::{Parser, Subcommand, ValueEnum};
@@ -44,7 +44,16 @@ pub enum Commands {
     Commit,
     /// Compute object ID and optionally create an object from a file
     ///
-    HashObject,
+    HashObject {
+        /// Specify the type
+        #[arg(value_enum, default_value = "blob", short, long)]
+        type_: ObjectType,
+        /// Actually write the object into the database
+        #[arg(short, action = clap::ArgAction::SetTrue)]
+        write: bool,
+        /// Read object from <file>
+        path: PathBuf,
+    },
     /// Show commit logs
     ///
     Log,
@@ -76,14 +85,30 @@ pub enum ObjectType {
     Tree,
 }
 
+impl ObjectType {
+    pub fn to_string(&self) -> String {
+        match self {
+            ObjectType::Blob => "blob",
+            ObjectType::Commit => "commit",
+            ObjectType::Tag => "tag",
+            ObjectType::Tree => "tree",
+        }
+        .to_string()
+    }
+
+    pub fn as_bytes(&self) -> Vec<u8> {
+        self.to_string().into_bytes()
+    }
+}
+
 impl Commands {
     pub fn execute(&self) {
         match self {
             Commands::Init { path } => {
                 let repo = if path.is_none() {
-                    repo_create(".")
+                    cmd_repo_create(".")
                 } else {
-                    repo_create(path.as_ref().unwrap().to_str().unwrap())
+                    cmd_repo_create(path.as_ref().unwrap().to_str().unwrap())
                 };
 
                 println!(
@@ -94,7 +119,10 @@ impl Commands {
             Commands::CatFile { type_, object } => {
                 let repo = repo_find(".", true).expect("Not a git repository");
 
-                cat_file(&repo, object, Some(type_.clone()));
+                cmd_cat_file(repo, object, Some(type_.clone()));
+            }
+            Commands::HashObject { type_, write, path } => {
+                cmd_hash_object(type_, *write, path);
             }
             _ => unimplemented!(),
         }

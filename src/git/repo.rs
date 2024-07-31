@@ -2,7 +2,7 @@ use crate::git::config::GitConfig;
 use std::{fs, path::Path, path::PathBuf};
 
 /// Represents a Git Repository
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GitRepository {
     pub worktree: PathBuf,
     pub gitdir: PathBuf,

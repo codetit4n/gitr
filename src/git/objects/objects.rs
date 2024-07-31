@@ -13,11 +13,11 @@ use std::{
 pub trait GitObject {
     fn fmt(&self) -> Vec<u8>;
 
-    fn serialize(&self, repo: Option<&GitRepository>) -> Vec<u8> {
+    fn serialize(&self, _: Option<GitRepository>) -> Vec<u8> {
         unimplemented!()
     }
 
-    fn deserialize(&mut self, data: Vec<u8>) {
+    fn deserialize(&mut self, _: Vec<u8>) {
         unimplemented!()
     }
     fn init(&mut self) {}
@@ -92,26 +92,26 @@ pub fn object_read(repo: &GitRepository, sha: &str) -> Option<Box<dyn GitObject>
     Some(obj)
 }
 
-fn object_write(object: Box<dyn GitObject>, repo: Option<&GitRepository>) -> String {
+pub fn object_write(object: Box<dyn GitObject>, repo: Option<GitRepository>) -> String {
     // serialize object data
-    let data = object.serialize(repo);
-    dbg!(&data.len());
+    let data = object.serialize(repo.clone());
 
     // Add header
     let mut result = object.fmt();
     result.push(b' ');
-    result.push(data.len() as u8);
+    result.extend(data.len().to_string().as_bytes());
     result.push(b'\x00');
     result.extend(data);
 
-    // Compute hash
+    // compute sha1
     let mut hasher = Sha1::new();
-    hasher.update(result.clone());
-    let sha = format!("{:x}", hasher.finalize());
+    hasher.update(&result);
+    let sha = hasher.finalize();
+    let sha = format!("{:x}", sha);
 
     if repo.is_some() {
         let path = repo_file(
-            repo.unwrap(),
+            &repo.unwrap(),
             &format!("objects/{}/{}", &sha[0..2], &sha[2..]),
             true,
         )

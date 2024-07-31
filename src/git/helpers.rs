@@ -1,11 +1,16 @@
 use crate::cli::ObjectType;
-use crate::git::objects::objects::object_read;
-use crate::git::repo::{repo_dir, repo_file, GitRepository};
+use crate::git::objects::objects::{object_read, object_write};
+use crate::git::{
+    objects::{GitBlob, GitObject},
+    repo::{repo_dir, repo_file, repo_find, GitRepository},
+};
 use serde_ini;
-use std::fs;
+use std::fs::{self, File};
+use std::io::{BufReader, Read};
+use std::path::Path;
 
 /// Create a new git repository at the given path
-pub fn repo_create(path: &str) -> GitRepository {
+pub fn cmd_repo_create(path: &str) -> GitRepository {
     let repo = GitRepository::new(path, true);
 
     if repo.worktree.exists() {
@@ -51,8 +56,8 @@ pub fn repo_create(path: &str) -> GitRepository {
     repo
 }
 
-pub fn cat_file(repo: &GitRepository, obj: &str, fmt: Option<ObjectType>) {
-    let obj = object_read(repo, &object_find(repo, obj, fmt, true)).unwrap();
+pub fn cmd_cat_file(repo: GitRepository, obj: &str, fmt: Option<ObjectType>) {
+    let obj = object_read(&repo, &object_find(&repo, obj, fmt, true)).unwrap();
     println!(
         "{}",
         std::str::from_utf8(&obj.serialize(Some(repo)))
@@ -61,6 +66,33 @@ pub fn cat_file(repo: &GitRepository, obj: &str, fmt: Option<ObjectType>) {
     );
 }
 
-fn object_find(repo: &GitRepository, name: &str, fmt: Option<ObjectType>, follow: bool) -> String {
+fn object_find(_: &GitRepository, name: &str, _: Option<ObjectType>, _: bool) -> String {
     name.to_string()
+}
+
+pub fn cmd_hash_object(type_: &ObjectType, write: bool, path: &Path) {
+    let mut repo: Option<GitRepository> = None;
+    if write {
+        repo = repo_find(".", true);
+    }
+
+    let fd = File::open(path).expect("Failed to open file {path}");
+    let sha = object_hash(fd, type_, repo);
+    println!("{sha}")
+}
+
+fn object_hash(fd: File, fmt: &ObjectType, repo: Option<GitRepository>) -> String {
+    let mut data: Vec<u8> = Vec::new();
+    let mut reader = BufReader::new(fd);
+    reader.read_to_end(&mut data).expect("Failed to read file");
+
+    let obj: Box<dyn GitObject> = match fmt {
+        ObjectType::Blob => Box::new(GitBlob {
+            fmt: fmt.as_bytes(),
+            blobdata: data,
+        }),
+        _ => panic!("Unknown type {}!", { fmt.to_string() }),
+    };
+
+    object_write(obj, repo)
 }

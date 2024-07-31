@@ -11,7 +11,7 @@ impl GitObject for GitBlob {
         self.fmt.clone()
     }
 
-    fn serialize(&self, _: Option<&GitRepository>) -> Vec<u8> {
+    fn serialize(&self, _: Option<GitRepository>) -> Vec<u8> {
         return self.blobdata.clone();
     }
 

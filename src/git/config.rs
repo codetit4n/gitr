@@ -1,13 +1,13 @@
 use serde::{Deserialize, Serialize};
 
 /// Represents a Git Config file located in the .git directory
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct GitConfig {
     pub core: Core,
 }
 
 /// Represents the core section of the Git Config file
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Core {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub repositoryformatversion: Option<String>,
