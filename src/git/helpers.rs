@@ -21,7 +21,7 @@ pub fn cmd_repo_create(path: &str) -> GitRepository {
             && fs::read_dir(&repo.gitdir)
                 .expect("Failed to read .git directory")
                 .into_iter()
-                .nth(0)
+                .next()
                 .is_some()
         {
             panic!("{} is not empty", repo.gitdir.display());

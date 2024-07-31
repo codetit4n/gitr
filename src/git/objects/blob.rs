@@ -12,7 +12,7 @@ impl GitObject for GitBlob {
     }
 
     fn serialize(&self, _: Option<GitRepository>) -> Vec<u8> {
-        return self.blobdata.clone();
+        self.blobdata.clone()
     }
 
     fn deserialize(&mut self, data: Vec<u8>) {

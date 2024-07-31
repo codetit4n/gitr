@@ -56,28 +56,24 @@ pub fn object_read(repo: &GitRepository, sha: &str) -> Option<Box<dyn GitObject>
 
     let obj: Box<dyn GitObject> = match fmt {
         b"commit" => {
-            dbg!("commit");
             Box::new(GitCommit {
                 fmt: b"commit".to_vec(),
                 data: raw_data[y + 1..].to_vec(),
             })
         }
         b"tree" => {
-            dbg!("tree");
             Box::new(GitTree {
                 fmt: b"tree".to_vec(),
                 data: raw_data[y + 1..].to_vec(),
             })
         }
         b"tag" => {
-            dbg!("tag");
             Box::new(GitTag {
                 fmt: b"tag".to_vec(),
                 data: raw_data[y + 1..].to_vec(),
             })
         }
         b"blob" => {
-            dbg!("blob");
             Box::new(GitBlob {
                 fmt: b"blob".to_vec(),
                 blobdata: raw_data[y + 1..].to_vec(),
