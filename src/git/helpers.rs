@@ -58,7 +58,7 @@ pub fn cmd_repo_create(path: &str) -> GitRepository {
 
 pub fn cmd_cat_file(repo: GitRepository, obj: &str, fmt: Option<ObjectType>) {
     let obj = object_read(&repo, &object_find(&repo, obj, fmt, true)).unwrap();
-    println!(
+    print!(
         "{}",
         std::str::from_utf8(&obj.serialize(Some(repo)))
             .unwrap()
