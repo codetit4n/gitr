@@ -13,7 +13,7 @@ impl GitObject for GitCommit {
     }
 }
 
-type OrderedMap = BTreeMap<Option<String>, Vec<u8>>;
+type OrderedMap = BTreeMap<Option<Vec<u8>>, Vec<u8>>;
 
 fn kvlm_parse(raw: Vec<u8>, start: usize, map: Option<OrderedMap>) -> OrderedMap {
     let mut map: OrderedMap = match map {
@@ -23,13 +23,50 @@ fn kvlm_parse(raw: Vec<u8>, start: usize, map: Option<OrderedMap>) -> OrderedMap
 
     let spc = raw[start..].iter().position(|&b| b == b' ');
     dbg!(spc);
-    let nl = raw[start..].iter().position(|&b| b == b'\n');
+    let nl = raw[start..]
+        .iter()
+        .position(|&b| b == b'\n')
+        .expect("Invalid object");
     dbg!(nl);
 
-    if spc.is_none() || (nl < spc) {
-        assert_eq!(nl, Some(start));
+    if spc.is_none() || (nl < spc.unwrap()) {
+        assert_eq!(nl, start);
         map.insert(None, raw[start + 1..].to_vec());
         return map;
+    }
+    let spc = spc.unwrap();
+    let key = raw[start..spc].to_vec();
+    let mut end = start;
+
+    loop {
+        end = raw[start..].iter().position(|&b| b == b'\n').unwrap();
+        if raw[end + 1] != b' ' {
+            break;
+        }
+    }
+
+    let slice = &raw[spc + 1..end];
+    let mut value = Vec::with_capacity(slice.len());
+
+    let mut i = 0;
+    while i < slice.len() {
+        if slice[i..].starts_with(b"\n ") {
+            value.push(b'\n');
+            i += 2; // Skip over "\n "
+        } else {
+            value.push(slice[i]);
+            i += 1;
+        }
+    }
+
+    if map.contains_key(&Some(key.clone())) {
+        if let Some(existing_value) = map.get_mut(&Some(key.clone())) {
+            existing_value.extend(value);
+        } else {
+            map.insert(Some(key.clone()), vec![value]);
+        }
+    } else {
+        map.insert(Some(key.clone()), value);
     }
 
     map
@@ -42,6 +79,8 @@ mod tests {
     #[test]
     fn test_kvlm_parse() {
         let raw1 = b"hi there
+";
+        let raw2 = b"
 ";
         let raw = b"tree 29ff16c9c14e2652b22f8b78bb08a5a07930c147
 parent 206941306e8a8af65b66eaaaea388a7ae24d49a0
@@ -67,7 +106,13 @@ gpgsig -----BEGIN PGP SIGNATURE-----
 Create first draft
 ";
 
-        let map = kvlm_parse(raw1.to_vec(), 0, None);
-        dbg!(map);
+        let map = kvlm_parse(raw.to_vec(), 0, None);
+
+        // print map
+        for (k, v) in map.iter() {
+            println!("{:?} {:?}", k, v);
+        }
+
+        assert_eq!(map.len(), 1);
     }
 }
