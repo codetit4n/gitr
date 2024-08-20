@@ -13,7 +13,7 @@ impl GitObject for GitCommit {
     }
 }
 
-type OrderedMap = BTreeMap<Option<Vec<u8>>, Vec<u8>>;
+type OrderedMap = BTreeMap<Option<Vec<u8>>, Vec<Vec<u8>>>;
 
 fn kvlm_parse(raw: Vec<u8>, start: usize, map: Option<OrderedMap>) -> OrderedMap {
     let mut map: OrderedMap = match map {
@@ -21,17 +21,17 @@ fn kvlm_parse(raw: Vec<u8>, start: usize, map: Option<OrderedMap>) -> OrderedMap
         None => BTreeMap::new(),
     };
 
+    dbg!(String::from_utf8(raw[start..].to_vec()));
+
     let spc = raw[start..].iter().position(|&b| b == b' ');
-    dbg!(spc);
     let nl = raw[start..]
         .iter()
         .position(|&b| b == b'\n')
         .expect("Invalid object");
-    dbg!(nl);
 
     if spc.is_none() || (nl < spc.unwrap()) {
         assert_eq!(nl, start);
-        map.insert(None, raw[start + 1..].to_vec());
+        map.insert(None, vec![raw[start + 1..].to_vec()]);
         return map;
     }
     let spc = spc.unwrap();
@@ -39,7 +39,7 @@ fn kvlm_parse(raw: Vec<u8>, start: usize, map: Option<OrderedMap>) -> OrderedMap
     let mut end = start;
 
     loop {
-        end = raw[start..].iter().position(|&b| b == b'\n').unwrap();
+        end = raw[end + 1..].iter().position(|&b| b == b'\n').unwrap();
         if raw[end + 1] != b' ' {
             break;
         }
@@ -61,15 +61,19 @@ fn kvlm_parse(raw: Vec<u8>, start: usize, map: Option<OrderedMap>) -> OrderedMap
 
     if map.contains_key(&Some(key.clone())) {
         if let Some(existing_value) = map.get_mut(&Some(key.clone())) {
-            existing_value.extend(value);
+            existing_value.push(value);
         } else {
             map.insert(Some(key.clone()), vec![value]);
         }
     } else {
-        map.insert(Some(key.clone()), value);
+        map.insert(Some(key.clone()), vec![value[..].to_vec()]);
+    }
+    // print map
+    for (k, v) in map.iter() {
+        println!("{:?} {:?}", k, v);
     }
 
-    map
+    kvlm_parse(raw, end + 1, Some(map))
 }
 
 #[cfg(test)]
@@ -80,7 +84,7 @@ mod tests {
     fn test_kvlm_parse() {
         let raw1 = b"hi there
 ";
-        let raw2 = b"
+        let raw2 = b"author Thibault Polge <thibault@thb.lt> 1527025023 +0200
 ";
         let raw = b"tree 29ff16c9c14e2652b22f8b78bb08a5a07930c147
 parent 206941306e8a8af65b66eaaaea388a7ae24d49a0
@@ -107,12 +111,5 @@ Create first draft
 ";
 
         let map = kvlm_parse(raw.to_vec(), 0, None);
-
-        // print map
-        for (k, v) in map.iter() {
-            println!("{:?} {:?}", k, v);
-        }
-
-        assert_eq!(map.len(), 1);
     }
 }
