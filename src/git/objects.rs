@@ -1,5 +1,6 @@
 pub mod blob;
 pub mod commit;
+pub mod kvlm;
 pub mod objects;
 pub mod tag;
 pub mod tree;
