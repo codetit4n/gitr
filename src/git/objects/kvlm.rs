@@ -67,6 +67,35 @@ pub fn kvlm_parse(
     kvlm_parse(raw, end + 1, Some(dct))
 }
 
+fn kvlm_serialize(kvlm: OrderMap<Option<Vec<u8>>, Vec<u8>>) -> Vec<u8> {
+    let mut ret: Vec<u8> = Vec::new();
+
+    // rust code:
+    for key in kvlm.keys() {
+        if key.is_none() {
+            continue;
+        }
+        let val = kvlm.get(key).unwrap();
+        let val = val.clone();
+
+        for v in val.iter() {
+            ret.extend(key.clone().unwrap());
+            ret.push(b' ');
+            if *v == b'\n' {
+                ret.extend(b"\n ");
+            }
+            ret.push(b'\n');
+        }
+    }
+
+    // Append the message
+    ret.push(b'\n');
+    ret.extend(kvlm.get(&None).unwrap());
+    ret.push(b'\n');
+
+    ret
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
