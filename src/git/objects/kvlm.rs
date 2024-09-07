@@ -67,7 +67,7 @@ pub fn kvlm_parse(
     kvlm_parse(raw, end + 1, Some(dct))
 }
 
-fn kvlm_serialize(kvlm: OrderMap<Option<Vec<u8>>, Vec<u8>>) -> Vec<u8> {
+pub fn kvlm_serialize(kvlm: OrderMap<Option<Vec<u8>>, Vec<u8>>) -> Vec<u8> {
     let mut ret: Vec<u8> = Vec::new();
 
     // rust code:

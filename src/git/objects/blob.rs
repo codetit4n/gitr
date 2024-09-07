@@ -1,4 +1,5 @@
 use crate::git::{objects::GitObject, repo::GitRepository};
+use std::any::Any;
 
 #[derive(Debug)]
 pub struct GitBlob {
@@ -17,5 +18,9 @@ impl GitObject for GitBlob {
 
     fn deserialize(&mut self, data: Vec<u8>) {
         self.blobdata = data
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }

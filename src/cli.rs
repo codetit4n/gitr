@@ -1,5 +1,5 @@
 use crate::git::{
-    helpers::{cmd_cat_file, cmd_hash_object, cmd_repo_create},
+    helpers::{cmd_cat_file, cmd_hash_object, cmd_log, cmd_repo_create},
     repo::repo_find,
 };
 use clap::{Parser, Subcommand, ValueEnum};
@@ -54,9 +54,13 @@ pub enum Commands {
         /// Read object from <file>
         path: PathBuf,
     },
-    /// Show commit logs
+    /// Display history of a given commit
     ///
-    Log,
+    Log {
+        /// Commit to start at
+        #[arg(default_value = "HEAD")]
+        commit: String,
+    },
     /// Show information about files in the index and the working tree
     ///
     LsFiles,
@@ -99,6 +103,16 @@ impl ObjectType {
     pub fn as_bytes(&self) -> Vec<u8> {
         self.to_string().into_bytes()
     }
+
+    pub fn from_string(s: &str) -> Self {
+        match s {
+            "blob" => ObjectType::Blob,
+            "commit" => ObjectType::Commit,
+            "tag" => ObjectType::Tag,
+            "tree" => ObjectType::Tree,
+            _ => panic!("Unknown object type"),
+        }
+    }
 }
 
 impl Commands {
@@ -124,6 +138,7 @@ impl Commands {
             Commands::HashObject { type_, write, path } => {
                 cmd_hash_object(type_, *write, path);
             }
+            Commands::Log { commit } => cmd_log(commit.clone()),
             _ => unimplemented!(),
         }
     }

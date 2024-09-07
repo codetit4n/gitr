@@ -1,13 +1,15 @@
 use crate::cli::ObjectType;
 use crate::git::objects::objects::{object_read, object_write};
 use crate::git::{
-    objects::{GitBlob, GitObject},
+    objects::{GitBlob, GitCommit, GitObject},
     repo::{repo_dir, repo_file, repo_find, GitRepository},
 };
 use serde_ini;
+use std::collections::HashSet;
 use std::fs::{self, File};
 use std::io::{BufReader, Read};
 use std::path::Path;
+use std::str;
 
 /// Create a new git repository at the given path
 pub fn cmd_repo_create(path: &str) -> GitRepository {
@@ -95,4 +97,64 @@ fn object_hash(fd: File, fmt: &ObjectType, repo: Option<GitRepository>) -> Strin
     };
 
     object_write(obj, repo)
+}
+
+pub fn cmd_log(commit: String) {
+    let repo = repo_find(".", true);
+
+    print!("digraph gitrlog{{");
+    print!("  node[shape=rect]");
+
+    let repo = repo.unwrap();
+    let mut seen = HashSet::new();
+
+    log_graphviz(&repo, &object_find(&repo, &commit, None, true), &mut seen);
+
+    print!("}}");
+}
+
+fn log_graphviz(repo: &GitRepository, sha: &str, seen: &mut HashSet<String>) {
+    if seen.contains(sha) {
+        return;
+    }
+    seen.insert(sha.to_string());
+
+    let commit = object_read(repo, sha);
+    if commit.is_none() {
+        return;
+    }
+    let commit = commit.unwrap();
+
+    let commit = commit
+        .as_any()
+        .downcast_ref::<GitCommit>()
+        .expect("Not a commit object");
+    let short_hash = &sha[0..8];
+    let message = commit.kvlm.get(&None).unwrap();
+    let message = std::str::from_utf8(&message).unwrap().trim();
+    let message = message.replace("\\", "\\\\").replace("\"", "\\\"");
+    let message = if message.contains("\n") {
+        let index = message.find("\n").unwrap();
+        &message[..index] // Keep only the first line
+    } else {
+        &message
+    };
+    print!("  c_{} [label=\"{}: {}\"]", sha, &sha[0..7], message);
+    assert_eq!(commit.fmt(), b"commit");
+
+    if !commit.kvlm.contains_key(&Some(b"parent".to_vec())) {
+        return;
+    }
+
+    let parents = commit.kvlm.get(&Some(b"parent".to_vec())).unwrap();
+
+    let parents: Vec<String> = match str::from_utf8(parents) {
+        Ok(s) => s.split_whitespace().map(String::from).collect(),
+        Err(_) => vec![],
+    };
+
+    for p in parents {
+        println!("  c_{0} -> c_{1};", sha, p);
+        log_graphviz(repo, &p, seen);
+    }
 }

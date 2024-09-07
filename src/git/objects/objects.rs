@@ -3,14 +3,16 @@ use crate::git::{
     repo::{repo_file, GitRepository},
 };
 use flate2::{bufread::ZlibDecoder, write::ZlibEncoder, Compression};
+use ordermap::OrderMap;
 use sha1::{Digest, Sha1};
+use std::any::Any;
 use std::{
     fs,
     io::{prelude::*, BufWriter, Write},
 };
 
 /// Trait for Git objects
-pub trait GitObject {
+pub trait GitObject: Any {
     fn fmt(&self) -> Vec<u8>;
 
     fn serialize(&self, _: Option<GitRepository>) -> Vec<u8> {
@@ -20,7 +22,8 @@ pub trait GitObject {
     fn deserialize(&mut self, _: Vec<u8>) {
         unimplemented!()
     }
-    fn init(&mut self) {}
+
+    fn as_any(&self) -> &dyn Any;
 }
 
 pub fn object_read(repo: &GitRepository, sha: &str) -> Option<Box<dyn GitObject>> {
@@ -56,29 +59,25 @@ pub fn object_read(repo: &GitRepository, sha: &str) -> Option<Box<dyn GitObject>
 
     let obj: Box<dyn GitObject> = match fmt {
         b"commit" => {
-            Box::new(GitCommit {
+            let mut commit = Box::new(GitCommit {
                 fmt: b"commit".to_vec(),
-                data: raw_data[y + 1..].to_vec(),
-            })
+                kvlm: OrderMap::new(),
+            });
+            commit.deserialize(raw_data[y + 1..].to_vec());
+            commit
         }
-        b"tree" => {
-            Box::new(GitTree {
-                fmt: b"tree".to_vec(),
-                data: raw_data[y + 1..].to_vec(),
-            })
-        }
-        b"tag" => {
-            Box::new(GitTag {
-                fmt: b"tag".to_vec(),
-                data: raw_data[y + 1..].to_vec(),
-            })
-        }
-        b"blob" => {
-            Box::new(GitBlob {
-                fmt: b"blob".to_vec(),
-                blobdata: raw_data[y + 1..].to_vec(),
-            })
-        }
+        b"tree" => Box::new(GitTree {
+            fmt: b"tree".to_vec(),
+            data: raw_data[y + 1..].to_vec(),
+        }),
+        b"tag" => Box::new(GitTag {
+            fmt: b"tag".to_vec(),
+            data: raw_data[y + 1..].to_vec(),
+        }),
+        b"blob" => Box::new(GitBlob {
+            fmt: b"blob".to_vec(),
+            blobdata: raw_data[y + 1..].to_vec(),
+        }),
         _ => {
             let fmt_str = std::str::from_utf8(fmt).unwrap();
             panic!("Unknown type {fmt_str} for object {sha}")
