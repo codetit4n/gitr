@@ -139,7 +139,7 @@ fn log_graphviz(repo: &GitRepository, sha: &str, seen: &mut HashSet<String>) {
     } else {
         &message
     };
-    print!("  c_{} [label=\"{}: {}\"]", sha, &sha[0..7], message);
+    println!("  c_{} [label=\"{}: {}\"]", sha, short_hash, message);
     assert_eq!(commit.fmt(), b"commit");
 
     if !commit.kvlm.contains_key(&Some(b"parent".to_vec())) {

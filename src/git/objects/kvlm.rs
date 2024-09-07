@@ -69,8 +69,6 @@ pub fn kvlm_parse(
 
 pub fn kvlm_serialize(kvlm: OrderMap<Option<Vec<u8>>, Vec<u8>>) -> Vec<u8> {
     let mut ret: Vec<u8> = Vec::new();
-
-    // rust code:
     for key in kvlm.keys() {
         if key.is_none() {
             continue;
