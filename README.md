@@ -6,7 +6,7 @@
 ### Install `gitr`
 
 ```bash
-./install.sh
+sh install.sh
 ```
 
 ### Run

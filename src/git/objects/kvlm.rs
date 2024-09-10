@@ -1,10 +1,10 @@
 use ordermap::OrderMap;
 
-pub fn kvlm_parse(
-    raw: &[u8],
-    start: usize,
-    mut dct: Option<OrderMap<Option<Vec<u8>>, Vec<u8>>>,
-) -> OrderMap<Option<Vec<u8>>, Vec<u8>> {
+type Value = Vec<Vec<u8>>;
+
+pub type Dict = OrderMap<Option<Vec<u8>>, Value>;
+
+pub fn kvlm_parse(raw: &[u8], start: usize, mut dct: Option<Dict>) -> Dict {
     if dct.is_none() {
         dct = Some(OrderMap::new());
     }
@@ -21,7 +21,8 @@ pub fn kvlm_parse(
 
     if spc.is_none() || (nl.is_some() && nl.unwrap() < spc.unwrap()) {
         assert_eq!(nl.unwrap(), start);
-        dct.insert(None, raw[start + 1..].to_vec());
+        dct.insert(None, vec![raw[start + 1..].to_vec()]);
+
         return dct;
     }
 
@@ -55,40 +56,44 @@ pub fn kvlm_parse(
     }
 
     if let Some(existing_value) = dct.get_mut(&Some(key.to_vec())) {
-        if existing_value.is_empty() {
-            *existing_value = value;
-        } else {
-            existing_value.extend(value);
-        }
+        existing_value.push(value);
     } else {
-        dct.insert(Some(key.to_vec()), value);
+        dct.insert(Some(key.to_vec()), vec![value]);
     }
 
     kvlm_parse(raw, end + 1, Some(dct))
 }
 
-pub fn kvlm_serialize(kvlm: OrderMap<Option<Vec<u8>>, Vec<u8>>) -> Vec<u8> {
+pub fn kvlm_serialize(kvlm: Dict) -> Vec<u8> {
     let mut ret: Vec<u8> = Vec::new();
     for key in kvlm.keys() {
         if key.is_none() {
             continue;
         }
         let val = kvlm.get(key).unwrap();
-        let val = val.clone();
 
         for v in val.iter() {
             ret.extend(key.clone().unwrap());
             ret.push(b' ');
-            if *v == b'\n' {
-                ret.extend(b"\n ");
-            }
+            v.iter().for_each(|c| {
+                if *c == b'\n' {
+                    ret.extend(b"\n ");
+                } else {
+                    ret.push(*c);
+                }
+            });
             ret.push(b'\n');
         }
     }
 
     // Append the message
     ret.push(b'\n');
-    ret.extend(kvlm.get(&None).unwrap());
+    ret.extend(
+        kvlm.get(&None)
+            .unwrap()
+            .iter()
+            .flat_map(|x| x.iter().cloned()),
+    );
     ret.push(b'\n');
 
     ret
@@ -126,29 +131,35 @@ Create first draft";
         let map = kvlm_parse(raw, 0, None);
 
         assert_eq!(map.len(), 6);
+
         assert_eq!(
             map.get(&Some(b"tree".to_vec())).unwrap(),
-            b"29ff16c9c14e2652b22f8b78bb08a5a07930c147"
+            &vec![b"29ff16c9c14e2652b22f8b78bb08a5a07930c147".to_vec()]
         );
+
         assert_eq!(
             map.get(&Some(b"parent".to_vec())).unwrap(),
-            b"206941306e8a8af65b66eaaaea388a7ae24d49a0"
+            &vec![b"206941306e8a8af65b66eaaaea388a7ae24d49a0".to_vec()]
         );
+
         assert_eq!(
             map.get(&Some(b"author".to_vec())).unwrap(),
-            b"Thibault Polge <thibault@thb.lt> 1527025023 +0200"
+            &vec![b"Thibault Polge <thibault@thb.lt> 1527025023 +0200".to_vec()]
         );
         assert_eq!(
             map.get(&Some(b"committer".to_vec())).unwrap(),
-            b"Thibault Polge <thibault@thb.lt> 1527025044 +0200"
+            &vec![b"Thibault Polge <thibault@thb.lt> 1527025044 +0200".to_vec()]
         );
+
         assert_eq!(
             map.get(&Some(b"gpgsig".to_vec())).unwrap(),
-            b"-----BEGIN PGP SIGNATURE-----"
+            &vec![b"-----BEGIN PGP SIGNATURE-----".to_vec()]
         );
+
         assert_eq!(
             map.get(&None).unwrap(),
-            b" iQIzBAABCAAdFiEExwXquOM8bWb4Q2zVGxM2FxoLkGQFAlsEjZQACgkQGxM2FxoL
+            &vec![
+                b" iQIzBAABCAAdFiEExwXquOM8bWb4Q2zVGxM2FxoLkGQFAlsEjZQACgkQGxM2FxoL
  kGQdcBAAqPP+ln4nGDd2gETXjvOpOxLzIMEw4A9gU6CzWzm+oB8mEIKyaH0UFIPh
  rNUZ1j7/ZGFNeBDtT55LPdPIQw4KKlcf6kC8MPWP3qSu3xHqx12C5zyai2duFZUU
  wqOt9iCFCscFQYqKs3xsHI+ncQb+PGjVZA8+jPw7nrPIkeSXQV2aZb1E68wa2YIL
@@ -164,6 +175,8 @@ Create first draft";
  -----END PGP SIGNATURE-----
 
 Create first draft"
+                    .to_vec()
+            ]
         );
     }
 }

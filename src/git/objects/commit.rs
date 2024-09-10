@@ -1,13 +1,13 @@
+use crate::git::objects::kvlm::Dict;
 use crate::git::objects::kvlm::{kvlm_parse, kvlm_serialize};
 use crate::git::objects::objects::GitObject;
 use crate::git::repo::GitRepository;
-use ordermap::OrderMap;
 use std::any::Any;
 
 #[derive(Debug)]
 pub struct GitCommit {
     pub fmt: Vec<u8>,
-    pub kvlm: OrderMap<Option<Vec<u8>>, Vec<u8>>,
+    pub kvlm: Dict,
 }
 
 impl GitObject for GitCommit {
