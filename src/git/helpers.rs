@@ -131,7 +131,7 @@ fn log_graphviz(repo: &GitRepository, sha: &str, seen: &mut HashSet<String>) {
         .expect("Not a commit object");
     let short_hash = &sha[0..8];
     let message = commit.kvlm.get(&None).unwrap();
-    let message = std::str::from_utf8(&message).unwrap().trim();
+    let message = std::str::from_utf8(&message[0]).unwrap().trim();
     let message = message.replace("\\", "\\\\").replace("\"", "\\\"");
     let message = if message.contains("\n") {
         let index = message.find("\n").unwrap();
@@ -148,13 +148,9 @@ fn log_graphviz(repo: &GitRepository, sha: &str, seen: &mut HashSet<String>) {
 
     let parents = commit.kvlm.get(&Some(b"parent".to_vec())).unwrap();
 
-    let parents: Vec<String> = match str::from_utf8(parents) {
-        Ok(s) => s.split_whitespace().map(String::from).collect(),
-        Err(_) => vec![],
-    };
-
     for p in parents {
-        println!("  c_{0} -> c_{1};", sha, p);
-        log_graphviz(repo, &p, seen);
+        let parent_str = String::from_utf8(p.clone()).unwrap(); // Decode parent as ASCII string
+        println!("  c_{} -> c_{};", sha, parent_str); // Print parent relationship
+        log_graphviz(repo, &parent_str, seen);
     }
 }
